@@ -2,9 +2,10 @@ const express = require('express');
 const bcrypt = require('bcrypt-nodejs');
 const cors = require('cors');
 const knex = require('knex');
-
-
-
+const register = require('./controllers/register');
+const signin = require('./controllers/signin');
+const profile = require('./controllers/profile');
+const image	= require('./controllers/image');	
 
 const db = knex({
   client: 'pg',
@@ -17,7 +18,7 @@ const db = knex({
 });
 
 db.select('*').from('users').then(data => {
-	console.log(data);
+	// console.log(data);
 });
 
 const app = express();
@@ -25,36 +26,6 @@ const app = express();
 // app.use(express.urlencoded({extended: false}))
 app.use(express.json());
 
-const database = {
-	users: [
-	{
-		id: '123',
-		name: 'jon',
-		email: 'jon@gmail.com',
-		password: 'orange',
-		entries: 0,
-		joined: new Date()
-	},
-	{
-		id: '124',
-		name: 'mike',
-		email: 'mike@gmail.com',
-		password: 'apple',
-		entries: 0,
-		joined: new Date()
-	}
-
-	],
-	login: [
-	{
-		id: '911',
-		hash: '',
-		email: 'john@gmail.com'
-
-	}
-
-	]
-}
 
 app.use(cors())
 
@@ -64,66 +35,13 @@ app.get('/', (req, res) => {
 })
 
 
-app.post('/signin', (req, res) => {
-	bcrypt.compare("", '$2a$10$2cE1.WZrsXzOuLVPWZOVpOnJNJWpdGhIiCSerjWELrc6hwwSUHZsm'
-, function(err, res) {
-    console.log('first guess', res)
-});
-bcrypt.compare("veggies", '$2a$10$2cE1.WZrsXzOuLVPWZOVpOnJNJWpdGhIiCSerjWELrc6hwwSUHZsm'
-, function(err, res) {
-    console.log('seconds guess', res)
-});
-	if (req.body.email === database.users[0].email &&
-	 req.body.password === database.users[0].password) {
-		res.json(database.users[0]);
-	} else {
-	res.json('wrong info mofo');
-}
-	
-})
+app.post('/signin', (req, res) => signin.handleSignin(db, bcrypt))
 
-app.post('/register', (req, res) => {
-	const { email, name, password } = req.body;
-	
-	db('users')
-		.returning('*')
-		.insert({
-		email: email,
-		name: name,
-		joined: new Date()
-	}).then(user => {
-		res.json(user[0]);
-	})
-		.catch(err => res.status(400).json('sorry unable to register'))
-})
+app.post('/register', (req, res) => { register.handleRegister(req, res, db, bcrypt) })
 
-app.get('/profile/:id', (req, res) => {
-	let found = false;
-	const { id } = req.params;
-	database.users.forEach(user => {
-		if (user.id === id) {
-			return res.json(user);
-		} 
-	})
-	if (!found) {
-		res.status(404).json('the fked up on id');
-	}
-})
-
-app.put('/image', (req, res) => {
-		let found = false;
-	const { id } = req.body;
-	database.users.forEach(user => {
-		if (user.id === id) {
-			found = true;
-			user.entries++
-			return res.json(user.entries);
-		} 
-	})
-	if (!found) {
-		res.status(404).json('the fked up on id');
-	}
-})
+app.get('/profile/:id', (req, res,) => {profile.handleProfileGet(res, req, db)})
+		
+app.put('/image', (req, res) => {image.imageHandler(req, res, db)})
 
 // bcrypt.hash("bacon", null, null, function(err, hash) {
 //     // Store hash in your password DB.
@@ -140,5 +58,5 @@ app.put('/image', (req, res) => {
 
 app.listen(3001, ()=> {
 
-	console.log('app is running on this shit');
+	console.log('app is running on this shit 3001');
 })
